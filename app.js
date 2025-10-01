@@ -6,28 +6,28 @@ class Game2048 {
         this.bestScore = parseInt(localStorage.getItem('bestScore')) || 0;
         this.gameWon = false;
         this.gameOver = false;
+        this.isMoving = false;
         
         this.init();
         this.setupEventListeners();
     }
 
     init() {
-        // Initialiser la grille vide
         this.grid = Array(this.size).fill(null).map(() => Array(this.size).fill(0));
         this.score = 0;
         this.gameWon = false;
         this.gameOver = false;
+        this.isMoving = false;
         
-        // Créer les cellules de la grille
         this.createGridCells();
-        
-        // Ajouter deux tuiles au départ
         this.addRandomTile();
         this.addRandomTile();
         
-        // Mettre à jour l'affichage
         this.updateDisplay();
         this.hideGameMessage();
+        
+        // Mettre à jour les scores affichés
+        this.updateScores();
     }
 
     createGridCells() {
@@ -72,23 +72,53 @@ class Game2048 {
             for (let j = 0; j < this.size; j++) {
                 if (this.grid[i][j] !== 0) {
                     const tile = document.createElement('div');
-                    tile.className = `tile tile-${this.grid[i][j]} tile-new`;
-                    tile.textContent = this.grid[i][j];
-                    tile.style.top = `${i * 121.25}px`;
-                    tile.style.left = `${j * 121.25}px`;
+                    const value = this.grid[i][j];
+                    tile.className = `tile tile-${value}`;
+                    tile.textContent = value;
+                    
+                    // Positionnement responsive en pourcentages
+                    const top = (i * (100 / this.size));
+                    const left = (j * (100 / this.size));
+                    
+                    tile.style.top = `${top}%`;
+                    tile.style.left = `${left}%`;
+                    tile.style.width = `calc(${100 / this.size}% - 10px)`;
+                    tile.style.height = `calc(${100 / this.size}% - 10px)`;
+                    
                     tileContainer.appendChild(tile);
+                    
+                    // Animation d'apparition
+                    setTimeout(() => {
+                        tile.classList.add('tile-new');
+                    }, 10);
                 }
             }
         }
 
-        document.getElementById('score').textContent = this.score;
-        document.getElementById('best-score').textContent = this.bestScore;
+        this.updateScores();
     }
 
-    move(direction) {
-        if (this.gameOver || this.gameWon) return;
+    updateScores() {
+        const scoreElement = document.getElementById('score');
+        const bestScoreElement = document.getElementById('best-score');
+        
+        scoreElement.textContent = this.score;
+        bestScoreElement.textContent = this.bestScore;
+        
+        // Animation du score
+        scoreElement.classList.add('score-update');
+        setTimeout(() => {
+            scoreElement.classList.remove('score-update');
+        }, 400);
+    }
 
+    async move(direction) {
+        if (this.gameOver || this.gameWon || this.isMoving) return false;
+
+        this.isMoving = true;
         let moved = false;
+        
+        // Sauvegarder l'état avant le mouvement pour l'animation
         const oldGrid = this.grid.map(row => [...row]);
 
         switch (direction) {
@@ -107,29 +137,36 @@ class Game2048 {
         }
 
         if (moved) {
-            this.addRandomTile();
-            this.updateDisplay();
-            
-            if (this.checkWin()) {
-                this.gameWon = true;
-                this.showGameMessage('Vous avez gagné !', 'win');
-            } else if (this.isGameOver()) {
-                this.gameOver = true;
-                this.showGameMessage('Game Over !', 'lose');
-            }
-
-            if (this.score > this.bestScore) {
-                this.bestScore = this.score;
-                localStorage.setItem('bestScore', this.bestScore);
-            }
-            
-            // Animation du score
-            const scoreElement = document.getElementById('score');
-            scoreElement.classList.add('score-update');
+            // Ajouter une nouvelle tuile après un court délai
             setTimeout(() => {
-                scoreElement.classList.remove('score-update');
-            }, 400);
+                this.addRandomTile();
+                this.updateDisplay();
+                
+                if (this.checkWin()) {
+                    this.gameWon = true;
+                    setTimeout(() => {
+                        this.showGameMessage('Vous avez gagné !', 'win');
+                    }, 300);
+                } else if (this.isGameOver()) {
+                    this.gameOver = true;
+                    setTimeout(() => {
+                        this.showGameMessage('Game Over !', 'lose');
+                    }, 300);
+                }
+
+                if (this.score > this.bestScore) {
+                    this.bestScore = this.score;
+                    localStorage.setItem('bestScore', this.bestScore);
+                    this.updateScores();
+                }
+                
+                this.isMoving = false;
+            }, 150);
+        } else {
+            this.isMoving = false;
         }
+
+        return moved;
     }
 
     moveLeft() {
@@ -142,7 +179,7 @@ class Game2048 {
                 if (j < row.length - 1 && row[j] === row[j + 1]) {
                     newRow.push(row[j] * 2);
                     this.score += row[j] * 2;
-                    j++; // Sauter la prochaine tuile car elle a été fusionnée
+                    j++;
                 } else {
                     newRow.push(row[j]);
                 }
@@ -170,7 +207,7 @@ class Game2048 {
                 if (j > 0 && row[j] === row[j - 1]) {
                     newRow.unshift(row[j] * 2);
                     this.score += row[j] * 2;
-                    j--; // Sauter la prochaine tuile car elle a été fusionnée
+                    j--;
                 } else {
                     newRow.unshift(row[j]);
                 }
@@ -203,7 +240,7 @@ class Game2048 {
                 if (i < col.length - 1 && col[i] === col[i + 1]) {
                     newCol.push(col[i] * 2);
                     this.score += col[i] * 2;
-                    i++; // Sauter la prochaine tuile car elle a été fusionnée
+                    i++;
                 } else {
                     newCol.push(col[i]);
                 }
@@ -238,7 +275,7 @@ class Game2048 {
                 if (i > 0 && col[i] === col[i - 1]) {
                     newCol.unshift(col[i] * 2);
                     this.score += col[i] * 2;
-                    i--; // Sauter la prochaine tuile car elle a été fusionnée
+                    i--;
                 } else {
                     newCol.unshift(col[i]);
                 }
@@ -315,18 +352,10 @@ class Game2048 {
     setupEventListeners() {
         // Événements clavier
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp') {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
                 e.preventDefault();
-                this.move('up');
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                this.move('down');
-            } else if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                this.move('left');
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                this.move('right');
+                const direction = e.key.replace('Arrow', '').toLowerCase();
+                this.move(direction);
             }
         });
 
@@ -339,7 +368,14 @@ class Game2048 {
             this.init();
         });
 
-        // Support tactile pour mobile
+        // Support tactile amélioré pour mobile
+        this.setupTouchControls();
+        
+        // Support des boutons virtuels pour mobile
+        this.setupVirtualButtons();
+    }
+
+    setupTouchControls() {
         let touchStartX = 0;
         let touchStartY = 0;
         let touchEndX = 0;
@@ -349,8 +385,8 @@ class Game2048 {
         const gameContainer = document.querySelector('.game-container');
 
         gameContainer.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
             e.preventDefault();
         }, { passive: false });
 
@@ -359,43 +395,159 @@ class Game2048 {
         }, { passive: false });
 
         gameContainer.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            touchEndY = e.changedTouches[0].screenY;
-            this.handleSwipe();
+            touchEndX = e.changedTouches[0].clientX;
+            touchEndY = e.changedTouches[0].clientY;
+            this.handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY, minSwipeDistance);
             e.preventDefault();
         }, { passive: false });
+    }
 
-        this.handleSwipe = () => {
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            const absDeltaX = Math.abs(deltaX);
-            const absDeltaY = Math.abs(deltaY);
+    handleSwipe(startX, startY, endX, endY, minDistance) {
+        const deltaX = endX - startX;
+        const deltaY = endY - startY;
+        const absDeltaX = Math.abs(deltaX);
+        const absDeltaY = Math.abs(deltaY);
 
-            // Ignorer les petits mouvements
-            if (absDeltaX < minSwipeDistance && absDeltaY < minSwipeDistance) {
-                return;
-            }
+        // Ignorer les petits mouvements
+        if (absDeltaX < minDistance && absDeltaY < minDistance) {
+            return;
+        }
 
-            if (absDeltaX > absDeltaY) {
-                // Mouvement horizontal
-                if (deltaX > 0) {
-                    this.move('right');
-                } else {
-                    this.move('left');
-                }
+        if (absDeltaX > absDeltaY) {
+            // Mouvement horizontal
+            if (deltaX > 0) {
+                this.move('right');
             } else {
-                // Mouvement vertical
-                if (deltaY > 0) {
-                    this.move('down');
-                } else {
-                    this.move('up');
+                this.move('left');
+            }
+        } else {
+            // Mouvement vertical
+            if (deltaY > 0) {
+                this.move('down');
+            } else {
+                this.move('up');
+            }
+        }
+    }
+
+    setupVirtualButtons() {
+        // Créer des boutons virtuels pour mobile si nécessaire
+        if ('ontouchstart' in window || navigator.maxTouchPoints) {
+            this.createVirtualControls();
+        }
+    }
+
+    createVirtualControls() {
+        const controlsContainer = document.createElement('div');
+        controlsContainer.className = 'virtual-controls';
+        controlsContainer.innerHTML = `
+            <div class="control-row">
+                <button class="control-btn" data-direction="up">↑</button>
+            </div>
+            <div class="control-row">
+                <button class="control-btn" data-direction="left">←</button>
+                <button class="control-btn" data-direction="down">↓</button>
+                <button class="control-btn" data-direction="right">→</button>
+            </div>
+        `;
+
+        // Ajouter le style pour les contrôles virtuels
+        const style = document.createElement('style');
+        style.textContent = `
+            .virtual-controls {
+                display: none;
+                margin-top: 20px;
+                text-align: center;
+            }
+            .control-row {
+                display: flex;
+                justify-content: center;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            .control-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+                background: #8f7a66;
+                color: white;
+                border: none;
+                border-radius: 50%;
+                cursor: pointer;
+                touch-action: manipulation;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+            .control-btn:active {
+                background: #7f6a56;
+                transform: scale(0.95);
+            }
+            @media (max-width: 768px) and (orientation: portrait) {
+                .virtual-controls {
+                    display: block;
                 }
             }
-        };
+        `;
+        document.head.appendChild(style);
+
+        // Ajouter les écouteurs d'événements
+        controlsContainer.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const direction = btn.getAttribute('data-direction');
+                this.move(direction);
+            });
+            
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const direction = btn.getAttribute('data-direction');
+                this.move(direction);
+            });
+        });
+
+        document.querySelector('.container').appendChild(controlsContainer);
+    }
+
+    // Méthode pour redimensionner en cas de changement d'orientation
+    handleResize() {
+        this.updateDisplay();
     }
 }
 
 // Initialiser le jeu au chargement de la page
 window.addEventListener('DOMContentLoaded', () => {
-    new Game2048();
+    const game = new Game2048();
+    
+    // Gérer le redimensionnement et changement d'orientation
+    window.addEventListener('resize', () => {
+        game.handleResize();
+    });
+    
+    window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+            game.handleResize();
+        }, 100);
+    });
+});
+
+// Empêcher le zoom sur double-tap pour mobile
+document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(e) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+
+// Empêcher le menu contextuel sur mobile
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
 });
