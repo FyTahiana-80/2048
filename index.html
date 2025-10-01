@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Jeu 2048</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>2048</h1>
+            <div class="scores">
+                <div class="score-container">
+                    <div class="score-label">Score</div>
+                    <div id="score" class="score-value">0</div>
+                </div>
+                <div class="score-container">
+                    <div class="score-label">Meilleur</div>
+                    <div id="best-score" class="score-value">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-intro">
+            <p>Combinez les tuiles pour atteindre <strong>2048</strong> !</p>
+            <button id="new-game" class="button">Nouvelle Partie</button>
+        </div>
+
+        <div class="game-container">
+            <div id="grid-container" class="grid-container">
+                <!-- Les cellules de la grille seront générées par JavaScript -->
+            </div>
+            <div id="tile-container" class="tile-container">
+                <!-- Les tuiles seront générées par JavaScript -->
+            </div>
+        </div>
+
+        <div class="game-message" id="game-message">
+            <div class="message-content">
+                <p id="message-text"></p>
+                <button id="retry-button" class="button">Rejouer</button>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <p><strong>Comment jouer :</strong> Utilisez les flèches du clavier pour déplacer les tuiles. Les tuiles avec le même nombre fusionnent en une seule !</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
